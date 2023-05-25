@@ -1,10 +1,13 @@
 package com.example.serviceone;
 
 import org.springframework.amqp.core.*;
+import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,32 +18,28 @@ public class RabbitConfig {
         CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory("localhost");
         cachingConnectionFactory.setUsername("admin");
         cachingConnectionFactory.setPassword("admin");
-        cachingConnectionFactory.setVirtualHost("testVH");
         return cachingConnectionFactory;
     }
 
     @Bean
-    public AmqpAdmin amqpAdmin() {
-        return new RabbitAdmin(connectionFactory());
+    public Queue queue() {
+        return new Queue("test-queue");
     }
 
     @Bean
-    public RabbitTemplate rabbitTemplate() {
-        return new RabbitTemplate(connectionFactory());
+    public MessageConverter messageConverter() {
+        return new Jackson2JsonMessageConverter();
     }
 
     @Bean
-    public Queue myQueue() {
-        return new Queue("queue1");
-    }
+    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory,
+                                         MessageConverter messageConverter) {
 
-    @Bean
-    DirectExchange exchange() {
-        return new DirectExchange("testExchange", true, false);
-    }
+        RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
+        rabbitTemplate.setExchange("test-exchange");
+        rabbitTemplate.setRoutingKey("test-routing-key");
+        rabbitTemplate.setMessageConverter(messageConverter);
 
-    @Bean
-    Binding binding(Queue queue, DirectExchange exchange) {
-        return BindingBuilder.bind(queue).to(exchange).with("testRk");
+        return rabbitTemplate;
     }
 }

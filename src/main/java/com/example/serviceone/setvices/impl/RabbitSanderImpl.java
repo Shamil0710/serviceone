@@ -2,15 +2,18 @@ package com.example.serviceone.setvices.impl;
 
 import com.example.serviceone.models.MessageModel;
 import com.example.serviceone.setvices.RabbitSander;
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
-@Service
-@EnableRabbit
+import java.time.LocalDateTime;
+
+@Component
 public class RabbitSanderImpl implements RabbitSander {
     private final RabbitTemplate rabbitTemplate;
 
@@ -18,7 +21,7 @@ public class RabbitSanderImpl implements RabbitSander {
      * Уникальный номер сервиса, при необходимости возможна замена на UUID
      */
     @Value("${service.id}")
-    private int serviceId;
+    private Long serviceId;
     /**
      * Текущий статус сервиса
      */
@@ -32,7 +35,12 @@ public class RabbitSanderImpl implements RabbitSander {
 
     @Scheduled(fixedDelay = 1000)
     public void sendStatus() {
-        rabbitTemplate.convertAndSend(new MessageModel(serviceId, status));
+        MessageModel messageModel = new MessageModel();
+        messageModel.setServiceId(serviceId);
+        messageModel.setStatus(status);
+
+        rabbitTemplate.convertAndSend(messageModel);
+        System.out.println(LocalDateTime.now());
     }
 
     public void sendMessage(String message) {
